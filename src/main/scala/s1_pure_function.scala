@@ -88,16 +88,4 @@ object s1_pure_function{
     assert(fibonacci(25) == 75025)
 
   }
-
-
-
-
 }
-
-object MyModule {
-
-
-
-
-  }
-
