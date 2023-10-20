@@ -36,10 +36,10 @@ object s1_pure_function{
     val r3 = z.toString
     val r4 = z.toString
 
-    /** append function is NOT referentially transparent**/
+    /** append function is NOT referentially transparent */
     assert(r3==r4)
-    assert(r3 == y.append(", World").toString)
-    assert(r4 == y.append(", World").toString)
+    assert(r3 != y.append(", World").toString) /** should be equal */
+    assert(r4 != y.append(", World").toString) /** should be equal */
 
 
     /**  pure function */
@@ -53,6 +53,14 @@ object s1_pure_function{
         else loop(n-1,n*acc)
       }
       loop(n,1)
+    }
+
+    def fibonacci(n: Int):Int ={
+      def loop(n:Int):Int={
+        if(n <= 1) n
+        else loop(n-1) + loop(n-2)
+      }
+      loop(n)
     }
 
 
@@ -76,6 +84,8 @@ object s1_pure_function{
 
     assert(formatAbs(-42) == formatResult(-42, abs, "The absolute value"))
     assert(formatFactorial(5) == formatResult(5, factorial, "The factorial"))
+    assert(fibonacci(7) == 13)
+    assert(fibonacci(25) == 75025)
 
   }
 
