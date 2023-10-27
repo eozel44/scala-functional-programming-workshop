@@ -84,6 +84,15 @@ object s3_functional_datastructure{
     def product2(l:List[Double]) = foldRight(l, 1.0)(_ * _)  /** The anonymous function (x,y) => x * y can be written as _ * _ */
     def length[A](l: List[A]): Int = foldRight(l,0)((_,acc) => acc + 1)
 
+    @annotation.tailrec
+    def foldLeft[A,B](l: List[A], acc: B, f: (B,A) => B): B = l match {
+         case Nil => acc
+         case Cons(head, tail) =>  foldLeft(tail,f(acc,head) ,f)
+    }
+    def sumViaFoldLeft(l:List[Int]):Int = foldLeft(l,0, (x:Int, y:Int) => x+y)
+    def productViaFoldLeft(l:List[Double]) = foldLeft(l,1.0, (x:Double, y:Double) => x*y)
+    def lengthViaFoldLeft[A](l:List[A]):Int = foldLeft(l,0, (acc:Int, h:A) => acc + 1)
+
   }
 
   def main(args: Array[String]): Unit = {
@@ -101,6 +110,10 @@ object s3_functional_datastructure{
     assert(List.sum2(ex4) == List.foldRight(ex4,0)((x,y) => x +y))
     assert(List.length(ex4) == 4)
     assert(List.length(ex3) == 2)
+
+    assert(List.sum2(ex4) == List.sumViaFoldLeft(ex4))
+    assert(List.length(ex4) == List.lengthViaFoldLeft(ex4))
+
 
 
 
