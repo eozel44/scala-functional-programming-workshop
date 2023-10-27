@@ -63,6 +63,27 @@ object s3_functional_datastructure{
       case Cons(_,Nil) => Nil
       case Cons(head,tail) => Cons(head, init(tail))
     }
+
+    /** Recursion over lists and generalizing to higher-order functions */
+
+    def foldRight[A,B](l:List[A], acc:B)(f:(A,B)=>B): B = l match {
+      case Nil => acc
+      case Cons(head, tail) => f(head, foldRight(tail,acc)(f))
+    }
+    def sum2(l:List[Int]) = foldRight(l, 0)((x:Int,y:Int) => x+y)
+
+    /**
+        foldRight(Cons(1, Cons(2, Cons(3, Nil))), 0)((x,y) => x + y)
+        1 + foldRight(Cons(2, Cons(3, Nil)), 0)((x,y) => x + y)
+        1 + (2 + foldRight(Cons(3, Nil), 0)((x,y) => x + y))
+        1 + (2 + (3 + (foldRight(Nil, 0)((x,y) => x + y))))
+        1 + (2 + (3 + (0)))
+        6
+     */
+    def sum3(l:List[Long]) = foldRight(l, 0L)((x,y) => x+y)
+    def product2(l:List[Double]) = foldRight(l, 1.0)(_ * _)  /** The anonymous function (x,y) => x * y can be written as _ * _ */
+    def length[A](l: List[A]): Int = foldRight(l,0)((_,acc) => acc + 1)
+
   }
 
   def main(args: Array[String]): Unit = {
@@ -76,6 +97,10 @@ object s3_functional_datastructure{
     assert(List.drop(ex4, 2) == List(3,4))
     assert(List.dropWhile(ex4,(x:Int) => x % 3 == 0) == List(4))
     assert(List.init(ex4) == List(1,2,3))
+    assert(List.sum2(ex4) == 10)
+    assert(List.sum2(ex4) == List.foldRight(ex4,0)((x,y) => x +y))
+    assert(List.length(ex4) == 4)
+    assert(List.length(ex3) == 2)
 
 
 
