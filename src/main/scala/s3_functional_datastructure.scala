@@ -101,6 +101,13 @@ object s3_functional_datastructure{
     /** scala implementation of foldRight */
     def foldRightViaFoldLeft[A,B](l:List[A], acc:B)(f:(A,B)=>B):B = foldLeft(reverse(l),acc)((b, a) => f(a, b))
 
+    /**
+     * map function
+     * */
+
+    def map[A,B](l: List[A])(f: A => B): List[B] = foldRightViaFoldLeft(l,List[B]())((h,t)=>Cons(f(h),t))
+    def filter[A](l:List[A], f:A=>Boolean):List[A] = foldRightViaFoldLeft(l,Nil:List[A])((h,t)=> if (f(h)) Cons(h,t) else t)
+
   }
 
   def main(args: Array[String]): Unit = {
