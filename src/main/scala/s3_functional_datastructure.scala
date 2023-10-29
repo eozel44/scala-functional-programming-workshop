@@ -78,7 +78,54 @@ object s3_functional_datastructure{
     def map[A,B](l:List[A])(f:A=>B): List[B] = foldRightViaFoldLeft(l,List[B]())((head,tail)=>Cons(f(head),tail))
     def filter[A](l:List[A])(f:A=>Boolean):List[A] = foldRightViaFoldLeft(l,Nil:List[A])((head,tail) => if(f(head)) Cons(head,tail) else tail)
 
+    def flatMap[A,B](l:List[A])(f:A=>List[B]):List[B] = ???
 
+
+    @annotation.tailrec
+    def startsWith[A](l: List[A], sub: List[A]): Boolean = (l, sub) match {
+      case (_,Nil) => true
+      case (Cons(head,tail),Cons(headSub,tailSub))  if head == headSub =>  startsWith(tail, tailSub)
+      case _ => false
+    }
+
+    @annotation.tailrec
+    def hasSubsequence[A](l:List[A], sub:List[A]):Boolean =  l match {
+      case Nil => sub==Nil
+      case _ if startsWith(l,sub) => true
+      case Cons(h,t) => hasSubsequence(t,sub)
+    }
+
+    /** other exercises */
+    def remove[A](l:List[A], item: A):List[A]= l match{
+      case Nil => Nil
+      case Cons(head,tail) => if(head==item) tail else l
+    }
+
+    def setHead[A](item: A, l:List[A]):List[A]= l match{
+      case Nil => Cons(item,Nil)
+      case Cons(head,tail) =>  Cons(item,tail)
+    }
+
+    def drop[A](l: List[A], n: Int): List[A] = if(n<=0) l else l match{
+      case Nil => Nil
+      case Cons(head, tail) => drop(tail,n-1)
+    }
+
+    def dropWhile[A](l: List[A], f: A => Boolean): List[A] = l match {
+      case Cons(head, tail) => if (f(head)) tail else dropWhile(tail, f)
+      case _ => l
+    }
+
+    def append[A](l1:List[A], l2:List[A]):List[A] = l1 match {
+      case Nil => l2
+      case Cons(head, tail) => Cons(head,append(tail,l2))
+    }
+
+    def init[A](l: List[A]): List[A]  = l match{
+      case Nil => Nil
+      case Cons(_,Nil) => Nil
+      case Cons(head,tail) => Cons(head, init(tail))
+    }
 
 
   }
@@ -101,6 +148,8 @@ object s3_functional_datastructure{
     assert(List.filter(ex)(a => a*2 == 5) == Nil)
 
     assert(List.filter(ex)(a => a*2 == 6) == List(3))
+
+    assert(List.hasSubsequence(ex,List(1,2,3)) == true)
 
   }
 }
