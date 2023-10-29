@@ -131,6 +131,43 @@ object s3_functional_datastructure{
   }
 
 
+
+  /**
+     Algebraic data types can be used to define other data structures.
+     Let's define a simple binary tree data structure
+  */
+  sealed trait Tree[+A] {
+    def size: Int = this match {
+      case Leaf(_) => 1
+      case Branch(l,r) => 1 + l.size + r.size
+    }
+
+    def depth:Int = this match{
+      case Leaf(_) => 1
+      case Branch(l,r) => 1 + l.depth.max(r.depth)
+    }
+
+    def map[B](f:A=>B):Tree[B] = this match{
+      case Leaf(v) => Leaf(f(v))
+      case Branch(l, r) => Branch(l.map(f), r.map(f))
+    }
+
+    def fold[B](f:A=>B)(g: (B,B) => B):B = this match{
+      case Leaf(v) => f(v)
+      case Branch(l,r) => g(l.fold(f)(g), r.fold(f)(g))
+    }
+
+    def sizeViaFold: Int = fold(a => 1)(1 + _ + _)
+    def depthViaFold: Int = fold(a => 0)((d1,d2) => 1 + (d1 max d2))
+
+    def mapViaFold[B](f: A => B): Tree[B] = ???
+
+  }
+  case class Leaf[A](value:A) extends Tree[A]
+  case class Branch[A](left:Tree[A], right:Tree[A]) extends Tree[A]
+
+
+
   def main(args: Array[String]): Unit = {
 
     val ex = List(1,2,3,4,5)
