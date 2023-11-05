@@ -105,8 +105,8 @@ object s2_anoymous_function{
     val curryAdd: Int => Int => Int = (l) => (r) => add(l, r)
 
     val addTwo = curryAdd(2)
-    assert(addTwo(2)==4)
-    assert(addTwo(20)==22)
+    assert(addTwo(2)==add(2,2))
+    assert(addTwo(20)==add(2,20))
 
 
 
