@@ -63,6 +63,8 @@ case class Some[+A](get: A) extends Option[A]
 
   def main(args: Array[String]): Unit = {
 
+
+    /** option sample **/
     def mean(l:Seq[Double]):Option[Double] ={
       if (l.isEmpty) None
       else Some(l.sum / l.size)
@@ -74,7 +76,6 @@ case class Some[+A](get: A) extends Option[A]
     val k = None
     assert(k.getOrElse(1) == 1)
 
-    /** sample **/
     def sequence[A](a: List[Option[A]]): Option[List[A]] = a match {
       case Nil => Some(Nil)
       case head :: tail => head.flatMap(hh=> sequence(tail).map(hh :: _))
@@ -82,6 +83,25 @@ case class Some[+A](get: A) extends Option[A]
 
     val lis = List(Some(1),Some(2),Some(3))
     assert(sequence(lis) == Some(List(1,2,3)))
+
+    /** either sample */
+    case class Person(name: Name, age: Age)
+    case class Name(val value: String)
+    case class Age(val value: Int)
+
+    def mkName(name: String): Either[String, Name] =
+      if (name == "" || name == null) Left("Name is empty.")
+      else Right(Name(name))
+    def mkAge(age: Int): Either[String, Age] =
+      if (age < 0) Left("Age is out of range.")
+      else Right(Age(age))
+
+    def mkPerson(name: String, age: Int): Either[String, Person] =
+      mkName(name).map2(mkAge(age))(Person(_, _))
+
+    assert(mkPerson("eren",18) == Right(Person(Name("eren"),Age(18))))
+    assert(mkPerson("eren",-1) == Left("Age is out of range."))
+    assert(mkPerson("",20) == Left("Name is empty."))
 
   }
 }
