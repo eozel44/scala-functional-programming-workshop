@@ -49,5 +49,14 @@ case class Some[+A](get: A) extends Option[A]
     val k = None
     assert(k.getOrElse(1) == 1)
 
+    /** sample **/
+    def sequence[A](a: List[Option[A]]): Option[List[A]] = a match {
+      case Nil => Some(Nil)
+      case head :: tail => head.flatMap(hh=> sequence(tail).map(hh :: _))
+    }
+
+    val lis = List(Some(1),Some(2),Some(3))
+    assert(sequence(lis) == Some(List(1,2,3)))
+
   }
 }
