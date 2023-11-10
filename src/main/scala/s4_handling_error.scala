@@ -1,8 +1,7 @@
 object s4_handling_error{
 
 /**
-    // ': =>' the argument will not be evaluated until it is needed
-   //  'B>:A' parameter on these functions indicates that B must be a supertype of A.
+   Option
  */
 sealed trait Option[+A] {
 
@@ -14,6 +13,8 @@ sealed trait Option[+A] {
     case None => None
     case Some(a) => f(a)
   }
+  // 'default: => B' equals 'Unit => B'
+  //  'B>:A' parameter on these functions indicates that B must be a supertype of A.
   def getOrElse[B >: A](default: => B): B = this match {
     case None => default
     case Some(a) => a
@@ -34,7 +35,31 @@ sealed trait Option[+A] {
 case object None extends Option[Nothing]
 case class Some[+A](get: A) extends Option[A]
 
+/**
+ * Either
+ * */
+ sealed trait Either[+E, +A]{
+   def map[B](f:A=>B):Either[E,B] = this match {
+     case Left(e) => Left(e)
+     case Right(a) => Right(f(a))
+   }
+   def flatMap[EE >: E, B](f:A=>Either[EE, B]):Either[EE, B] = this match{
+     case Left(e) => Left(e)
+     case Right(a) => f(a)
+   }
+   def orElse[EE>:E, B>:A](b: => Either[EE, B]):Either[EE,B]= this match{
+     case Left(_) => b
+     case Right(a) => Right(a)
+   }
 
+   def map2[EE>:E,B,C](b: => Either[EE,B])(f:(A,B)=>C):Either[EE,C] =for{
+     a <-this
+     b1 <- b
+   } yield f(a,b1)
+
+ }
+ case class Left[+E](value: E) extends Either[E, Nothing]
+ case class Right[+A](value: A) extends Either[Nothing, A]
 
   def main(args: Array[String]): Unit = {
 
