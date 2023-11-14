@@ -1,3 +1,4 @@
+package pureFunction
 import scala.annotation.tailrec
 
 /** Pure Function

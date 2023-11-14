@@ -1,3 +1,4 @@
+package anoymousFunction
 import scala.annotation.tailrec
 
 object s2_anoymous_function{

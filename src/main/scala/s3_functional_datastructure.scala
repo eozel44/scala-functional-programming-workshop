@@ -1,3 +1,5 @@
+package functionalDatastructure
+
 object s3_functional_datastructure{
 
   /**
