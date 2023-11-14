@@ -4,25 +4,18 @@ object s5_laziness{
 
   sealed abstract class Stream[+A]{
 
-    def toListRecursive: List[A] = this match {
-      case Cons(h, t) => h() :: t().toListRecursive
-      case Empty => Nil
-    }
-
     def toList: List[A] = {
-
       @annotation.tailrec
       def loop(s:Stream[A], acc:List[A]):List[A] = s match{
         case Cons(h, t) => loop(t(), h()::acc)
         case Empty => acc.reverse
       }
-
       loop(this, Nil)
     }
   }
 
   object Empty extends Stream[Nothing]
-  case class Cons[+A](head: () => A, tail: () => Stream[A]) extends Stream[A]
+  case class Cons[+A](head:() => A, tail:() => Stream[A]) extends Stream[A]
 
   object Stream{
     def empty[A]:Stream[A] = Empty
