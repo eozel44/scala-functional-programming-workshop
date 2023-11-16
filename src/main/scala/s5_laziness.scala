@@ -28,18 +28,21 @@ object s5_laziness{
     }
 
     val xx = maybeTwiceLazy(true, {
-      println("hi"); 1 + 41
+      println("hello"); 1 + 41
     })
     //result
     //hi
     //x: Int = 84
 
-    assert(Stream(1, 2, 3).toList == List(1, 2, 3))
+    assert(Stream(1, 2, 3).toList == List(1,2,3))
     assert(Stream(1, 2, 3).take(2).toList == List(1, 2))
+    assert(Stream(1, 2, 3).takeWhile( l=> l<3).toList == List(1, 2))
 
   }
 }
-
+/**
+   We'll see how chains of transformations on streams are fused into a single pass, through the use of laziness
+*/
 sealed trait Stream[+A]{
 
   def toList: List[A] = {
@@ -54,6 +57,11 @@ sealed trait Stream[+A]{
   def take(n: Int): Stream[A] = this match {
     case _ if n <= 0 => Empty
     case Cons(h, t)  => cons(h(), t().take(n - 1))
+  }
+
+  def takeWhile(f: A => Boolean): Stream[A] = this match {
+    case Cons(h, t)  if f(h()) => cons(h(), t().takeWhile(f))
+    case _ => Empty
   }
 
 }
