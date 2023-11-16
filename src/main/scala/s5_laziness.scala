@@ -81,13 +81,25 @@ def foldRight[B](acc: => B)(f: (A, => B) => B):B = this match{
   case _ => acc
 }
 
-/** Here b is the unevaluated recursive step that folds the tail of the stream.
-    If f(a) returns true, b will never be evaluated and the computation terminates early.
+/** Here t is the unevaluated recursive step that folds the tail of the stream.
+    If f(h) returns true, b will never be evaluated and the computation terminates early.
 */
   def exists(f:A=>Boolean):Boolean =
-      foldRight(false)((a, b) => f(a) || b)
+      foldRight(false)((h, t) => f(h) || t)
 
 
+  def headOption: Option[A] =
+    foldRight(None:Option[A])((h,_) => Some(h))
+
+  def map[B](f:A =>B):Stream[B] = foldRight(empty[B])((h,t) => cons(f(h),t))
+
+  def filter(f:A => Boolean):Stream[A] = foldRight(empty[A])((h,t) => if(f(h)) cons(h,t) else t)
+
+  def append[B>:A](s: => Stream[B]): Stream[B] =
+    foldRight(s)((h,t) => cons(h,t))
+
+  def flatMap[B](f: A => Stream[B]): Stream[B] =
+    foldRight(empty[B])((h,t) => f(h) append t)
 }
 
 object Empty extends Stream[Nothing]
