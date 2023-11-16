@@ -37,12 +37,12 @@ object s5_laziness{
     assert(Stream(1, 2, 3).toList == List(1,2,3))
     assert(Stream(1, 2, 3).take(2).toList == List(1, 2))
     assert(Stream(1, 2, 3).takeWhile( l=> l<3).toList == List(1, 2))
+    assert(Stream(1, 2, 3).exists(_ == 2) == true)
+    assert(Stream(1, 2, 3).exists(_ == 5) == false)
 
   }
 }
-/**
-   We'll see how chains of transformations on streams are fused into a single pass, through the use of laziness
-*/
+/** We'll see how chains of transformations on streams are fused into a single pass, through the use of laziness */
 sealed trait Stream[+A]{
 
   def toList: List[A] = {
@@ -63,6 +63,30 @@ sealed trait Stream[+A]{
     case Cons(h, t)  if f(h()) => cons(h(), t().takeWhile(f))
     case _ => Empty
   }
+
+/** explicit recursion
+
+ def exists(f:A => Boolean):Boolean = this match {
+    case Cons(h, t) => f(h()) || t().exists(f)
+    case _ => false
+  }
+
+*/
+
+/** The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
+    If `f` doesn't evaluate its second argument, the recursion never occurs.
+ */
+def foldRight[B](acc: => B)(f: (A, => B) => B):B = this match{
+  case Cons(h,t) => f(h(), t().foldRight(acc)(f))
+  case _ => acc
+}
+
+/** Here b is the unevaluated recursive step that folds the tail of the stream.
+    If f(a) returns true, b will never be evaluated and the computation terminates early.
+*/
+  def exists(f:A=>Boolean):Boolean =
+      foldRight(false)((a, b) => f(a) || b)
+
 
 }
 
