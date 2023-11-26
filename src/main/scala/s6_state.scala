@@ -3,147 +3,174 @@ package state
 
 object s6_state {
 
-  def main(args: Array[String]): Unit = {
+  /**
+   * how to write programs that manipulate state in a purely functional way,
+   * using the very simple domain of random number as the example
+   *
+   * we can assume that the object rng has some internal state that gets updated after each invocation,
+   * since we would otherwise get the same value each time we call nextInt or nextDouble.
+   * Because the state updates are performed as a side effect, these methods are not referentially transparent.
+   *
+   * rng.nextDouble rng.nextInt
+   *
+   */
 
-    /**
-     * how to write programs that manipulate state in a purely functional way,
-     * using the very simple domain of random number as the example
-     *
-     * we can assume that the object rng has some internal state that gets updated after each invocation,
-     * since we would otherwise get the same value each time we call nextInt or nextDouble.
-     * Because the state updates are performed as a side effect, these methods are not referentially transparent.
-     *
-     * rng.nextDouble rng.nextInt
-     *
-     */
+  val rngSimple = new scala.util.Random
 
-    val rngSimple = new scala.util.Random
+  /**
+   * Purely functional random number generation
+   *
+   * Rather than returning only the generated random number (as is done in
+   * scala.util.Random) and updating some internal state by mutating it in place,
+   * we return the random number and the new state, leaving the old state unmodified.
+   * In effect, we separate the computing of the next state from the concern of passing
+   * the new state through the program.
+   *
+   */
 
-    /**
-     * Purely functional random number generation
-     *
-     * Rather than returning only the generated random number (as is done in
-     * scala.util.Random) and updating some internal state by mutating it in place,
-     * we return the random number and the new state, leaving the old state unmodified.
-     * In effect, we separate the computing of the next state from the concern of passing
-     * the new state through the program.
-     *
-     */
+  trait RNG {
+    def nextInt: (Int, RNG)
+  }
 
-    trait RNG {
-      def nextInt: (Int, RNG)
+  // linear congruential generator algorithm
+  object RNG {
+    case class Simple(seed: Long) extends RNG {
+      def nextInt: (Int, RNG) = {
+        val seed2 = (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1)
+
+        ((seed2 >>> 16).asInstanceOf[Int], Simple(seed2))
+      }
     }
 
-    // linear congruential generator algorithm
-    object RNG {
-      case class Simple(seed: Long) extends RNG {
-        def nextInt: (Int, RNG) = {
-          val seed2 = (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1)
+    def   positiveInt(rng: RNG): (Int, RNG) = {
+      val (i, r) = rng.nextInt
+      (if (i < 0) -(i + 1) else i, r)
+    }
 
-          ((seed2 >>> 16).asInstanceOf[Int], Simple(seed2))
+    def double(rng: RNG): (Double, RNG) = {
+      val (i, r) = positiveInt(rng)
+      (i / (Int.MaxValue.toDouble + 1), r)
+    }
+
+    def boolean(rng: RNG): (Boolean, RNG) =
+      rng.nextInt match {
+        case (i, rng2) => (i % 2 == 0, rng2)
+      }
+
+    def inits(count: Int)(rng: RNG): (List[Int], RNG) = {
+
+      @scala.annotation.tailrec
+      def go(count: Int, r: RNG, xs: List[Int]): (List[Int], RNG) = {
+        if (count == 0)
+          (xs, r)
+        else {
+          val (x, r2) = r.nextInt
+          go(count - 1, r2, x :: xs)
         }
       }
 
-      def   positiveInt(rng: RNG): (Int, RNG) = {
-        val (i, r) = rng.nextInt
-        (if (i < 0) -(i + 1) else i, r)
-      }
+      go(count, rng, List())
+    }
 
-      def double(rng: RNG): (Double, RNG) = {
-        val (i, r) = positiveInt(rng)
-        (i / (Int.MaxValue.toDouble + 1), r)
-      }
+    def intDouble(rng: RNG): ((Int, Double), RNG) = {
+      val (i, r1) = rng.nextInt
+      val (d, r2) = double(r1)
+      ((i, d), r2)
+    }
 
-      def boolean(rng: RNG): (Boolean, RNG) =
-        rng.nextInt match {
-          case (i, rng2) => (i % 2 == 0, rng2)
-        }
+    def doubleInt(rng: RNG): ((Double, Int), RNG) = {
+      val ((i, d), r) = intDouble(rng)
+      ((d, i), r)
+    }
 
-      def inits(count: Int)(rng: RNG): (List[Int], RNG) = {
-
-        @scala.annotation.tailrec
-        def go(count: Int, r: RNG, xs: List[Int]): (List[Int], RNG) = {
-          if (count == 0)
-            (xs, r)
-          else {
-            val (x, r2) = r.nextInt
-            go(count - 1, r2, x :: xs)
-          }
-        }
-
-        go(count, rng, List())
-      }
-
-      def intDouble(rng: RNG): ((Int, Double), RNG) = {
-        val (i, r1) = rng.nextInt
-        val (d, r2) = double(r1)
-        ((i, d), r2)
-      }
-
-      def doubleInt(rng: RNG): ((Double, Int), RNG) = {
-        val ((i, d), r) = intDouble(rng)
-        ((d, i), r)
-      }
-
-      /** we notice a common pattern: each of our functions
+    /** we notice a common pattern: each of our functions
           has a type of the form for RNG => (A, RNG) some type A. */
 
-      type Rand[+A] = RNG => (A, RNG)
+    type Rand[+A] = RNG => (A, RNG)
 
-      val int: Rand[Int] = _.nextInt
+    val int: Rand[Int] = _.nextInt
 
-      def unit[A](a: A): Rand[A] = rng => (a, rng)
+    def unit[A](a: A): Rand[A] = rng => (a, rng)
 
-      /** These state actions can be combined using combinators
+    /** These state actions can be combined using combinators
           which are higher-order functions that we will define in this section. */
-      def map[A, B](s: Rand[A])(f: A => B): Rand[B] = rng => {
-        val (a, rng2) = s(rng)
-        (f(a), rng2)
-      }
+    def map[A, B](s: Rand[A])(f: A => B): Rand[B] = rng => {
+      val (a, rng2) = s(rng)
+      (f(a), rng2)
+    }
 
-      val _double: Rand[Double] = map(positiveInt)(_ / (Int.MaxValue.toDouble + 1))
+    val _double: Rand[Double] = map(positiveInt)(_ / (Int.MaxValue.toDouble + 1))
 
-      def positiveEven:Rand[Int] =map(positiveInt)(i=>i-i % 2)
+    def positiveEven:Rand[Int] =map(positiveInt)(i=>i-i % 2)
 
-      /**
-         map is not powerful enough to implement intDouble and doubleInt functions
+    /**
+    map is not powerful enough to implement intDouble and doubleInt functions
          What we need is a new combinator map2, that can
          combine two RNG actions into one using a binary rather than unary function.
-       */
+     */
 
-      def map2[A,B,C](ra:Rand[A], rb:Rand[B])(f:(A,B)=>C):Rand[C] = rng=> {
-        val (a, r1) = ra(rng)
-        val (b, r2) = rb(r1)
-        (f(a, b), r2)
+    def map2[A,B,C](ra:Rand[A], rb:Rand[B])(f:(A,B)=>C):Rand[C] = rng=> {
+      val (a, r1) = ra(rng)
+      val (b, r2) = rb(r1)
+      (f(a, b), r2)
+    }
+
+    def both[A,B](ra: Rand[A], rb: Rand[B]): Rand[(A,B)] =
+      map2(ra, rb)((_, _))
+
+    val randIntDouble: Rand[(Int, Double)] = both(int,double)
+
+    val randDoubleInt: Rand[(Double, Int)] = both(double,int)
+
+    def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = rng =>{
+      val (a, r1) = f(rng)
+      g(a)(r1) // We pass the new state along
+    }
+
+    def nonNegativeLessThan(n: Int): Rand[Int] = {
+      flatMap(positiveInt) { i =>
+        val mod = i % n
+        if (i + (n-1) - mod >= 0) unit(mod) else nonNegativeLessThan(n)
       }
+    }
 
-      def both[A,B](ra: Rand[A], rb: Rand[B]): Rand[(A,B)] =
-          map2(ra, rb)((_, _))
+    def _map[A,B](s: Rand[A])(f: A => B): Rand[B] =
+      flatMap(s)(a => unit(f(a)))
 
-      val randIntDouble: Rand[(Int, Double)] = both(int,double)
+    def _map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+      flatMap(ra)(a => map(rb)(b => f(a, b)))
 
-      val randDoubleInt: Rand[(Double, Int)] = both(double,int)
 
-      def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = rng =>{
-        val (a, r1) = f(rng)
-        g(a)(r1) // We pass the new state along
-      }
+  }
 
-      def nonNegativeLessThan(n: Int): Rand[Int] = {
-        flatMap(positiveInt) { i =>
-          val mod = i % n
-          if (i + (n-1) - mod >= 0) unit(mod) else nonNegativeLessThan(n)
-        }
-      }
 
-      def _map[A,B](s: Rand[A])(f: A => B): Rand[B] =
-        flatMap(s)(a => unit(f(a)))
+  /**
+     A general state action data type
+   */
+    import State._
+    case class State[S,+A](run: S => (A,S)) {
+    def map[B](f: A => B): State[S, B] =
+      flatMap(a => unit(f(a)))
 
-      def _map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
-        flatMap(ra)(a => map(rb)(b => f(a, b)))
+    def map2[B,C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
+      flatMap(a => sb.map(b => f(a, b)))
 
+    def flatMap[B](f: A => State[S, B]): State[S, B] = State(s => {
+      val (a, s1) = run(s)
+      f(a).run(s1)
+    })
 
     }
+    object State {
+      type Rand[A] = State[RNG,A]
+      def unit[S,A](a: A): State[S,A] = State(s=>(a,s))
+    }
+
+
+
+  def main(args: Array[String]): Unit = {
+
+
 
     /**
         We can run this sequence of statements as many times as we want and we will always get the same values.
