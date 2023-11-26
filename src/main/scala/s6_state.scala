@@ -42,6 +42,31 @@ object s6_state{
 
           ((seed2 >>> 16).asInstanceOf[Int], simple(seed2))
         }
+
+        def positiveInt(rng: RNG): (Int, RNG) ={
+          val (i, r) = rng.nextInt
+          (if (i < 0) - (i + 1) else i, r)
+        }
+
+        def double(rng: RNG): (Double, RNG) ={
+          val (i, r) = positiveInt(rng)
+          (i / (Int.MaxValue.toDouble + 1), r)
+        }
+        def boolean(rng: RNG): (Boolean, RNG) =
+          rng.nextInt match { case (i,rng2) => (i%2 == 0,rng2) }
+      }
+      def inits(count:Int)(rng:RNG):(List[Int],RNG) ={
+
+        @scala.annotation.tailrec
+        def go(count:Int, r:RNG, xs:List[Int]):(List[Int],RNG)={
+          if(count==0)
+            (xs,r)
+          else{
+            val (x,r2) = r.nextInt
+            go(count-1,r2,x::xs)
+          }
+        }
+        go(count,rng,List())
       }
     }
 
